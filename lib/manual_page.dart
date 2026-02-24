@@ -821,14 +821,65 @@ class _ManualPainter extends CustomPainter {
 
   void _drawBox(Canvas canvas, double x, double y, double w, double h,
       Color color, {bool overlapBorder = false}) {
-    canvas.drawRect(Rect.fromLTWH(x, y, w, h), Paint()..color = color);
+    final b = math.min(4.0, math.min(w, h) * 0.15);
+    if (b < 0.5) {
+      canvas.drawRect(Rect.fromLTWH(x, y, w, h), Paint()..color = color);
+      return;
+    }
+    final light = _lighten(color, 0.50);
+    final dark  = _darken(color, 0.40);
+    // Top face
+    canvas.drawPath(Path()
+      ..moveTo(x,     y)
+      ..lineTo(x + w, y)
+      ..lineTo(x + w - b, y + b)
+      ..lineTo(x + b,     y + b)
+      ..close(), Paint()..color = light);
+    // Left face
+    canvas.drawPath(Path()
+      ..moveTo(x, y)
+      ..lineTo(x, y + h)
+      ..lineTo(x + b, y + h - b)
+      ..lineTo(x + b, y + b)
+      ..close(), Paint()..color = light);
+    // Bottom face
+    canvas.drawPath(Path()
+      ..moveTo(x,     y + h)
+      ..lineTo(x + w, y + h)
+      ..lineTo(x + w - b, y + h - b)
+      ..lineTo(x + b,     y + h - b)
+      ..close(), Paint()..color = dark);
+    // Right face
+    canvas.drawPath(Path()
+      ..moveTo(x + w, y)
+      ..lineTo(x + w, y + h)
+      ..lineTo(x + w - b, y + h - b)
+      ..lineTo(x + w - b, y + b)
+      ..close(), Paint()..color = dark);
+    // Centre surface
     canvas.drawRect(
-        Rect.fromLTWH(x, y, w, h),
-        Paint()
-          ..color = overlapBorder ? const Color(0xFFE3A93A) : Colors.white54
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = overlapBorder ? 2.0 : 0.8);
+        Rect.fromLTWH(x + b, y + b, w - 2 * b, h - 2 * b),
+        Paint()..color = color);
+    // Overlap border
+    if (overlapBorder) {
+      canvas.drawRect(Rect.fromLTWH(x, y, w, h), Paint()
+        ..color = const Color(0xFFE3A93A)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0);
+    }
   }
+
+  Color _lighten(Color c, double t) => Color.fromARGB(
+      (c.a * 255).round(),
+      (c.r * 255 + (255 - c.r * 255) * t).round().clamp(0, 255),
+      (c.g * 255 + (255 - c.g * 255) * t).round().clamp(0, 255),
+      (c.b * 255 + (255 - c.b * 255) * t).round().clamp(0, 255));
+
+  Color _darken(Color c, double t) => Color.fromARGB(
+      (c.a * 255).round(),
+      (c.r * 255 * (1 - t)).round().clamp(0, 255),
+      (c.g * 255 * (1 - t)).round().clamp(0, 255),
+      (c.b * 255 * (1 - t)).round().clamp(0, 255));
 
   void _drawRotIcon(Canvas canvas, double cx, double cy) {
     final paint = Paint()

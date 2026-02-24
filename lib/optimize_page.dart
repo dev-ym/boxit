@@ -198,15 +198,7 @@ class _PackPainter extends CustomPainter {
       final rh = r.h * s;
       final color = types[r.typeIndex].color;
 
-      canvas.drawRect(
-          Rect.fromLTWH(rx, ry, rw, rh),
-          Paint()..color = color.withAlpha(220));
-      canvas.drawRect(
-          Rect.fromLTWH(rx, ry, rw, rh),
-          Paint()
-            ..color = Colors.white
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 0.7);
+      _drawBezel(canvas, rx, ry, rw, rh, color);
 
       // Dimension label
       if (rw > 28 && rh > 14) {
@@ -277,6 +269,60 @@ class _PackPainter extends CustomPainter {
         : 0.0;
     tp.paint(canvas, Offset(x + ox, y + oy2));
   }
+
+  void _drawBezel(Canvas canvas, double x, double y, double w, double h, Color color) {
+    final b = math.min(4.0, math.min(w, h) * 0.15);
+    if (b < 0.5) {
+      canvas.drawRect(Rect.fromLTWH(x, y, w, h), Paint()..color = color);
+      return;
+    }
+    final light = _lighten(color, 0.50);
+    final dark  = _darken(color, 0.40);
+    // Top face
+    canvas.drawPath(Path()
+      ..moveTo(x,     y)
+      ..lineTo(x + w, y)
+      ..lineTo(x + w - b, y + b)
+      ..lineTo(x + b,     y + b)
+      ..close(), Paint()..color = light);
+    // Left face
+    canvas.drawPath(Path()
+      ..moveTo(x, y)
+      ..lineTo(x, y + h)
+      ..lineTo(x + b, y + h - b)
+      ..lineTo(x + b, y + b)
+      ..close(), Paint()..color = light);
+    // Bottom face
+    canvas.drawPath(Path()
+      ..moveTo(x,     y + h)
+      ..lineTo(x + w, y + h)
+      ..lineTo(x + w - b, y + h - b)
+      ..lineTo(x + b,     y + h - b)
+      ..close(), Paint()..color = dark);
+    // Right face
+    canvas.drawPath(Path()
+      ..moveTo(x + w, y)
+      ..lineTo(x + w, y + h)
+      ..lineTo(x + w - b, y + h - b)
+      ..lineTo(x + w - b, y + b)
+      ..close(), Paint()..color = dark);
+    // Centre surface
+    canvas.drawRect(
+        Rect.fromLTWH(x + b, y + b, w - 2 * b, h - 2 * b),
+        Paint()..color = color);
+  }
+
+  Color _lighten(Color c, double t) => Color.fromARGB(
+      (c.a * 255).round(),
+      (c.r * 255 + (255 - c.r * 255) * t).round().clamp(0, 255),
+      (c.g * 255 + (255 - c.g * 255) * t).round().clamp(0, 255),
+      (c.b * 255 + (255 - c.b * 255) * t).round().clamp(0, 255));
+
+  Color _darken(Color c, double t) => Color.fromARGB(
+      (c.a * 255).round(),
+      (c.r * 255 * (1 - t)).round().clamp(0, 255),
+      (c.g * 255 * (1 - t)).round().clamp(0, 255),
+      (c.b * 255 * (1 - t)).round().clamp(0, 255));
 
   @override
   bool shouldRepaint(_PackPainter old) => old.ppu != ppu;
