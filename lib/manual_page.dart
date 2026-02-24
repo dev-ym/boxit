@@ -583,15 +583,22 @@ class _ManualPageState extends State<ManualPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isWide = MediaQuery.of(context).size.width >= 600;
+    final screenW = MediaQuery.of(context).size.width;
+    final isWide = screenW >= 600;
+    final showHint = screenW >= 800;
     return Scaffold(
       backgroundColor: const Color(0xFF0D1117),
       appBar: AppBar(
         backgroundColor: const Color(0xFF161B22),
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text('Manual Placement',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+        title: isWide
+            ? const Text('Manual Placement',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15))
+            : null,
         actions: [
           TextButton.icon(
             onPressed: _copyOptimized,
@@ -607,7 +614,7 @@ class _ManualPageState extends State<ManualPage> {
             label:
                 const Text('Reset', style: TextStyle(color: Colors.white54)),
           ),
-          if (isWide)
+          if (showHint)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Text(
