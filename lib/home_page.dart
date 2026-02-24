@@ -60,50 +60,54 @@ class _HomePageState extends State<HomePage> {
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 680),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (_types.isNotEmpty) ...[
-                  _Header(),
-                  const SizedBox(height: 4),
-                ],
-                Expanded(
-                  child: _types.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.grid_view,
-                                  size: 64, color: Color(0xFF21262D)),
-                              const SizedBox(height: 16),
-                              const Text('No rectangle types yet',
-                                  style: TextStyle(
-                                      color: Colors.white38, fontSize: 16)),
-                              const SizedBox(height: 8),
-                              const Text('Press "Add Type" to begin',
-                                  style: TextStyle(
-                                      color: Colors.white24, fontSize: 13)),
-                            ],
+          child: LayoutBuilder(builder: (ctx, cst) {
+            final narrow = cst.maxWidth < 400;
+            final pad = narrow ? 12.0 : 20.0;
+            return Padding(
+              padding: EdgeInsets.all(pad),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (_types.isNotEmpty) ...[
+                    _Header(),
+                    const SizedBox(height: 4),
+                  ],
+                  Expanded(
+                    child: _types.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.grid_view,
+                                    size: 64, color: Color(0xFF21262D)),
+                                const SizedBox(height: 16),
+                                const Text('No rectangle types yet',
+                                    style: TextStyle(
+                                        color: Colors.white38, fontSize: 16)),
+                                const SizedBox(height: 8),
+                                const Text('Press "Add Type" to begin',
+                                    style: TextStyle(
+                                        color: Colors.white24, fontSize: 13)),
+                              ],
+                            ),
+                          )
+                        : ListView.separated(
+                            itemCount: _types.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 6),
+                            itemBuilder: (_, i) => _TypeRow(
+                              key: ValueKey(i),
+                              type: _types[i],
+                              onChanged: (t) => setState(
+                                  () { _typesChanged(); _types[i] = t; }),
+                              onDelete: () => setState(
+                                  () { _typesChanged(); _types.removeAt(i); }),
+                            ),
                           ),
-                        )
-                      : ListView.separated(
-                          itemCount: _types.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 6),
-                          itemBuilder: (_, i) => _TypeRow(
-                            key: ValueKey(i),
-                            type: _types[i],
-                            onChanged: (t) => setState(() { _typesChanged(); _types[i] = t; }),
-                            onDelete: () =>
-                                setState(() { _typesChanged(); _types.removeAt(i); }),
-                          ),
-                        ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
+                  ),
+                  const SizedBox(height: 12),
+                  // Action row — wraps on very narrow screens
+                  Row(children: [
                     _ActionBtn(
                       icon: Icons.add,
                       label: 'Add Type',
@@ -111,32 +115,40 @@ class _HomePageState extends State<HomePage> {
                       color: const Color(0xFF21262D),
                     ),
                     const Spacer(),
-                    _ActionBtn(
-                      icon: Icons.auto_fix_high,
-                      label: 'Optimize',
-                      onPressed: _valid
-                          ? () => _push(OptimizePage(types: List.from(_types)))
-                          : null,
-                      color: const Color(0xFF1F6FEB),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.end,
+                      children: [
+                        _ActionBtn(
+                          icon: Icons.auto_fix_high,
+                          label: 'Optimize',
+                          onPressed: _valid
+                              ? () => _push(
+                                  OptimizePage(types: List.from(_types)))
+                              : null,
+                          color: const Color(0xFF1F6FEB),
+                        ),
+                        _ActionBtn(
+                          icon: Icons.pan_tool_alt,
+                          label: 'Manual',
+                          onPressed: _valid
+                              ? () => _push(ManualPage(
+                                    types: List.from(_types),
+                                    savedData: _savedManualData,
+                                    onSave: (data) =>
+                                        _savedManualData = data,
+                                  ))
+                              : null,
+                          color: const Color(0xFF238636),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 10),
-                    _ActionBtn(
-                      icon: Icons.pan_tool_alt,
-                      label: 'Manual',
-                      onPressed: _valid
-                          ? () => _push(ManualPage(
-                              types: List.from(_types),
-                              savedData: _savedManualData,
-                              onSave: (data) => _savedManualData = data,
-                            ))
-                          : null,
-                      color: const Color(0xFF238636),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+                  ]),
+                ],
+              ),
+            );
+          }),
         ),
       ),
     );

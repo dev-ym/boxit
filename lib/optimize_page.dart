@@ -42,7 +42,7 @@ class _OptimizePageState extends State<OptimizePage> {
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text('Optimal Packing',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -101,20 +101,25 @@ class _InfoBar extends StatelessWidget {
     final freePct = freeArea / squareArea * 100;
     return Container(
       color: const Color(0xFF161B22),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(children: [
-        const Icon(Icons.check_circle_outline,
-            color: Color(0xFF3FB950), size: 16),
-        const SizedBox(width: 8),
-        Text('Square: ${_fmt(sz)} × ${_fmt(sz)}',
-            style: const TextStyle(color: Colors.white70, fontSize: 13)),
-        const SizedBox(width: 20),
-        Text('$total rectangle${total == 1 ? '' : 's'} packed',
-            style: const TextStyle(color: Colors.white38, fontSize: 13)),
-        const SizedBox(width: 20),
-        Text('Free: ${_fmt(freeArea)} (${_fmt(freePct)}%)',
-            style: const TextStyle(color: Colors.white38, fontSize: 13)),
-      ]),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Wrap(
+        spacing: 20,
+        runSpacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.check_circle_outline,
+                color: Color(0xFF3FB950), size: 16),
+            const SizedBox(width: 8),
+            Text('Square: ${_fmt(sz)} × ${_fmt(sz)}',
+                style: const TextStyle(color: Colors.white70, fontSize: 13)),
+          ]),
+          Text('$total rectangle${total == 1 ? '' : 's'} packed',
+              style: const TextStyle(color: Colors.white38, fontSize: 13)),
+          Text('Free: ${_fmt(freeArea)} (${_fmt(freePct)}%)',
+              style: const TextStyle(color: Colors.white38, fontSize: 13)),
+        ],
+      ),
     );
   }
 }

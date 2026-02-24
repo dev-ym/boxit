@@ -89,7 +89,7 @@ class _ManualPageState extends State<ManualPage> {
 
   // Resize state (only BR corner)
   bool _resizing = false;
-  static const double _kCornerHitR = 14.0;
+  static const double _kCornerHitR = 20.0;
 
   // Snap-to-align threshold (screen pixels)
   static const double _kSnapPx = 12.0;
@@ -500,10 +500,90 @@ class _ManualPageState extends State<ManualPage> {
     return (cx, cy);
   }
 
+  // ── Info bar ──────────────────────────────────────────────────────────────
+
+  Widget _buildInfoBar(bool isWide) {
+    final placed = _rects.where((r) => r.inSquare).toList();
+    final placedCount = placed.length;
+    final overlaps = _computeOverlaps().length ~/ 2;
+    final valid = _isValid();
+    final squareArea = _squareSize * _squareSize;
+    final usedArea = placed.fold(0.0, (s, r) => s + r.worldW * r.worldH);
+    final freeArea = squareArea - usedArea;
+    final freePct = squareArea > 0 ? freeArea / squareArea * 100 : 0.0;
+
+    final squareLabel = Row(mainAxisSize: MainAxisSize.min, children: [
+      const Icon(Icons.square_outlined, color: Colors.white38, size: 15),
+      const SizedBox(width: 6),
+      Text('${_fmtSize(_squareSize)} × ${_fmtSize(_squareSize)}',
+          style: const TextStyle(color: Colors.white70, fontSize: 13)),
+    ]);
+    final freeLabel = Text(
+        'Free: ${_fmtSize(freeArea)} (${_fmtSize(freePct)}%)',
+        style: const TextStyle(color: Colors.white38, fontSize: 13));
+    final placedLabel = Text('$placedCount / ${_rects.length} placed',
+        style: const TextStyle(color: Colors.white38, fontSize: 13));
+    final validity = valid
+        ? const Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.check_circle, color: Color(0xFF3FB950), size: 15),
+            SizedBox(width: 5),
+            Text('Valid',
+                style: TextStyle(
+                    color: Color(0xFF3FB950),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600)),
+          ])
+        : overlaps > 0
+            ? Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.warning_amber_rounded,
+                    color: Color(0xFFE3A93A), size: 15),
+                const SizedBox(width: 5),
+                Text('$overlaps overlap${overlaps == 1 ? '' : 's'}',
+                    style: const TextStyle(
+                        color: Color(0xFFE3A93A),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600)),
+              ])
+            : const Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.info_outline, color: Colors.white38, size: 15),
+                SizedBox(width: 5),
+                Text('Place all rects',
+                    style: TextStyle(color: Colors.white38, fontSize: 13)),
+              ]);
+
+    if (!isWide) {
+      return Container(
+        color: const Color(0xFF161B22),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Row(children: [squareLabel, const Spacer(), validity]),
+          const SizedBox(height: 3),
+          Row(children: [freeLabel, const SizedBox(width: 16), placedLabel]),
+        ]),
+      );
+    }
+
+    return Container(
+      color: const Color(0xFF161B22),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(children: [
+        squareLabel,
+        const SizedBox(width: 20),
+        freeLabel,
+        const SizedBox(width: 20),
+        placedLabel,
+        const Spacer(),
+        validity,
+        const SizedBox(width: 4),
+      ]),
+    );
+  }
+
   // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
+    final isWide = MediaQuery.of(context).size.width >= 600;
     return Scaffold(
       backgroundColor: const Color(0xFF0D1117),
       appBar: AppBar(
@@ -511,82 +591,33 @@ class _ManualPageState extends State<ManualPage> {
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text('Manual Placement',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
         actions: [
           TextButton.icon(
             onPressed: _copyOptimized,
-            icon: const Icon(Icons.auto_fix_high, size: 16, color: Color(0xFF79C0FF)),
-            label: const Text('Copy Optimized', style: TextStyle(color: Color(0xFF79C0FF))),
+            icon: const Icon(Icons.auto_fix_high,
+                size: 15, color: Color(0xFF79C0FF)),
+            label: const Text('Copy Optimized',
+                style: TextStyle(color: Color(0xFF79C0FF), fontSize: 13)),
           ),
           TextButton.icon(
             onPressed: _reset,
-            icon: const Icon(Icons.restart_alt, size: 16, color: Colors.white54),
-            label: const Text('Reset', style: TextStyle(color: Colors.white54)),
+            icon: const Icon(Icons.restart_alt,
+                size: 16, color: Colors.white54),
+            label:
+                const Text('Reset', style: TextStyle(color: Colors.white54)),
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Text('Tap rect to rotate  ·  Drag to move  ·  Drag ◢ to resize square',
-                style: TextStyle(color: Colors.white38, fontSize: 11)),
-          ),
+          if (isWide)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Text(
+                  'Tap rect to rotate  ·  Drag to move  ·  Drag ◢ to resize square',
+                  style: TextStyle(color: Colors.white38, fontSize: 11)),
+            ),
         ],
       ),
       body: Column(children: [
-        // ── Size info bar ──────────────────────────────────────────────────
-        Builder(builder: (ctx) {
-          final placed = _rects.where((r) => r.inSquare).toList();
-          final placedCount = placed.length;
-          final overlaps = _computeOverlaps().length ~/ 2; // pairs
-          final valid = _isValid();
-          final squareArea = _squareSize * _squareSize;
-          final usedArea =
-              placed.fold(0.0, (s, r) => s + r.worldW * r.worldH);
-          final freeArea = squareArea - usedArea;
-          final freePct =
-              squareArea > 0 ? freeArea / squareArea * 100 : 0.0;
-          return Container(
-            color: const Color(0xFF161B22),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(children: [
-              const Icon(Icons.square_outlined, color: Colors.white38, size: 15),
-              const SizedBox(width: 8),
-              Text(
-                'Square: ${_fmtSize(_squareSize)} × ${_fmtSize(_squareSize)}',
-                style: const TextStyle(color: Colors.white70, fontSize: 13),
-              ),
-              const SizedBox(width: 20),
-              Text(
-                'Free: ${_fmtSize(freeArea)} (${_fmtSize(freePct)}%)',
-                style: const TextStyle(color: Colors.white38, fontSize: 13),
-              ),
-              const SizedBox(width: 20),
-              Text(
-                '$placedCount / ${_rects.length} placed',
-                style: const TextStyle(color: Colors.white38, fontSize: 13),
-              ),
-              const Spacer(),
-              if (valid)
-                const Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Icons.check_circle, color: Color(0xFF3FB950), size: 15),
-                  SizedBox(width: 5),
-                  Text('Valid', style: TextStyle(color: Color(0xFF3FB950), fontSize: 13, fontWeight: FontWeight.w600)),
-                ])
-              else if (overlaps > 0)
-                Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.warning_amber_rounded, color: Color(0xFFE3A93A), size: 15),
-                  const SizedBox(width: 5),
-                  Text('$overlaps overlap${overlaps == 1 ? '' : 's'}',
-                      style: const TextStyle(color: Color(0xFFE3A93A), fontSize: 13, fontWeight: FontWeight.w600)),
-                ])
-              else
-                const Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Icons.info_outline, color: Colors.white38, size: 15),
-                  SizedBox(width: 5),
-                  Text('Place all rects', style: TextStyle(color: Colors.white38, fontSize: 13)),
-                ]),
-              const SizedBox(width: 4),
-            ]),
-          );
-        }),
+        _buildInfoBar(isWide),
         // ── Interactive canvas ─────────────────────────────────────────────
         Expanded(child: LayoutBuilder(builder: (ctx, cst) {
         final size = Size(cst.maxWidth, cst.maxHeight);
