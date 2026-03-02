@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'models.dart';
 import 'packer.dart';
+import 'optimize_page.dart';
 
 // ── Data model for a rectangle in manual mode ─────────────────────────────
 
@@ -600,6 +601,22 @@ class _ManualPageState extends State<ManualPage> {
                     fontSize: 15))
             : null,
         actions: [
+          TextButton.icon(
+            onPressed: () {
+              final data = ManualPageData(
+                squareSize: _squareSize,
+                rects: _rects.map((r) => r.copyWith()).toList(),
+              );
+              Navigator.pushReplacement(context,
+                  MaterialPageRoute(builder: (_) => OptimizePage(
+                      types: widget.types,
+                      savedManualData: data,
+                      onSaveManualData: widget.onSave)));
+            },
+            icon: const Icon(Icons.auto_fix_high, size: 15, color: Color(0xFF388BFD)),
+            label: const Text('Optimized',
+                style: TextStyle(color: Color(0xFF388BFD), fontSize: 13)),
+          ),
           TextButton.icon(
             onPressed: _copyOptimized,
             icon: const Icon(Icons.auto_fix_high,

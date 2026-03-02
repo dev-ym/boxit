@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'models.dart';
 import 'packer.dart';
+import 'manual_page.dart';
 
 // Shared number formatter — strips unnecessary trailing zeros.
 String _fmt(double v) =>
@@ -9,7 +10,9 @@ String _fmt(double v) =>
 
 class OptimizePage extends StatefulWidget {
   final List<RectType> types;
-  const OptimizePage({super.key, required this.types});
+  final ManualPageData? savedManualData;
+  final void Function(ManualPageData)? onSaveManualData;
+  const OptimizePage({super.key, required this.types, this.savedManualData, this.onSaveManualData});
 
   @override
   State<OptimizePage> createState() => _OptimizePageState();
@@ -43,6 +46,18 @@ class _OptimizePageState extends State<OptimizePage> {
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text('Optimal Packing',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+        actions: [
+          TextButton.icon(
+            onPressed: () => Navigator.pushReplacement(context,
+                MaterialPageRoute(builder: (_) => ManualPage(
+                    types: widget.types,
+                    savedData: widget.savedManualData,
+                    onSave: widget.onSaveManualData))),
+            icon: const Icon(Icons.pan_tool_alt, size: 15, color: Color(0xFF3FB950)),
+            label: const Text('Manual',
+                style: TextStyle(color: Color(0xFF3FB950), fontSize: 13)),
+          ),
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

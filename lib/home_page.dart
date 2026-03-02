@@ -32,9 +32,17 @@ class _HomePageState extends State<HomePage> {
         width: w,
         height: h,
         count: 1 + rng.nextInt(5), // 1..5
-        color: kRectColors[_types.length % kRectColors.length],
+        color: _nextColor(),
       ));
     });
+  }
+
+  Color _nextColor() {
+    final used = _types.map((t) => t.color).toSet();
+    for (final c in kRectColors) {
+      if (!used.contains(c)) return c;
+    }
+    return kRectColors[_types.length % kRectColors.length];
   }
 
   bool get _valid =>
@@ -125,7 +133,7 @@ class _HomePageState extends State<HomePage> {
                           label: 'Optimize',
                           onPressed: _valid
                               ? () => _push(
-                                  OptimizePage(types: List.from(_types)))
+                                  OptimizePage(types: List.from(_types), savedManualData: _savedManualData, onSaveManualData: (d) => _savedManualData = d))
                               : null,
                           color: const Color(0xFF1F6FEB),
                         ),
