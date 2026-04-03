@@ -11,10 +11,7 @@
             "request": "launch",
             "program": "lib/main.dart",
             "deviceId": "chrome",
-            "args": [
-                // "--web-renderer",
-                "html"
-            ]
+            "args": []
         },
 
 
