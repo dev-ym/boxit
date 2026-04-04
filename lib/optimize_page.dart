@@ -80,7 +80,7 @@ class _OptimizePageState extends State<OptimizePage> {
                                 final screen = MediaQuery.of(ctx).size;
                                 final ppu = math.min(screen.width * 0.85,
                                         screen.height * 0.65) /
-                                    _result!.squareSize;
+                                    _result!.squareSize.ceilToDouble();
                                 return CustomPaint(
                                   size: Size(cst.maxWidth, cst.maxHeight),
                                   painter: _PackPainter(
@@ -108,7 +108,7 @@ class _InfoBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final total = result.placed.length;
-    final sz = result.squareSize;
+    final sz = result.squareSize.roundToDouble();
     final usedArea =
         types.fold(0.0, (s, t) => s + t.width * t.height * t.count);
     final squareArea = sz * sz;
@@ -187,9 +187,10 @@ class _PackPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final s = ppu;
-    final ox = (size.width - result.squareSize * s) / 2;
-    final oy = (size.height - result.squareSize * s) / 2;
-    final sqW = result.squareSize * s;
+    final sqSz = result.squareSize.roundToDouble();
+    final ox = (size.width - sqSz * s) / 2;
+    final oy = (size.height - sqSz * s) / 2;
+    final sqW = sqSz * s;
 
     // Square background
     canvas.drawRect(
@@ -227,18 +228,19 @@ class _PackPainter extends CustomPainter {
 
     // Axis labels
     _drawAxisLabel(canvas, '0', ox - 6, oy - 6, align: Alignment.bottomRight);
-    _drawAxisLabel(canvas, _fmt(result.squareSize), ox + sqW + 4, oy - 6,
+    _drawAxisLabel(canvas, _fmt(sqSz), ox + sqW + 4, oy - 6,
         align: Alignment.bottomLeft);
-    _drawAxisLabel(canvas, _fmt(result.squareSize), ox - 4, oy + sqW + 4,
+    _drawAxisLabel(canvas, _fmt(sqSz), ox - 4, oy + sqW + 4,
         align: Alignment.topRight);
   }
 
   void _drawGrid(Canvas canvas, double ox, double oy, double sqW, double s) {
-    final step = _niceStep(result.squareSize);
+    final sqSz = result.squareSize.roundToDouble();
+    final step = _niceStep(sqSz);
     final paint = Paint()
       ..color = Colors.white.withAlpha(18)
       ..strokeWidth = 0.5;
-    for (double v = step; v < result.squareSize - 1e-9; v += step) {
+    for (double v = step; v < sqSz - 1e-9; v += step) {
       final px = ox + v * s;
       final py = oy + v * s;
       canvas.drawLine(Offset(px, oy), Offset(px, oy + sqW), paint);

@@ -71,6 +71,42 @@ class _ManualPageState extends State<ManualPage> {
   late double _squareSize;
   late List<ManualRect> _rects;
 
+  // Undo / redo stacks — each entry is (squareSize, rects snapshot)
+  final _history = <(double, List<ManualRect>)>[];
+  final _future  = <(double, List<ManualRect>)>[];
+
+  List<ManualRect> _copyRects() => _rects.map((r) => r.copyWith()).toList();
+
+  void _saveHistory() {
+    _history.add((_squareSize, _copyRects()));
+    _future.clear();
+    if (_history.length > 100) _history.removeAt(0);
+  }
+
+  void _undo() {
+    if (_history.isEmpty) return;
+    setState(() {
+      _future.add((_squareSize, _copyRects()));
+      final snap = _history.removeLast();
+      _squareSize = snap.$1;
+      _rects = snap.$2;
+      _dragIdx = -1;
+      _resizing = false;
+    });
+  }
+
+  void _redo() {
+    if (_future.isEmpty) return;
+    setState(() {
+      _history.add((_squareSize, _copyRects()));
+      final snap = _future.removeLast();
+      _squareSize = snap.$1;
+      _rects = snap.$2;
+      _dragIdx = -1;
+      _resizing = false;
+    });
+  }
+
   // Display state — pixels per world unit, computed once on first layout
   double _ppu = 1.0;
   bool _ppuReady = false;
@@ -126,7 +162,7 @@ class _ManualPageState extends State<ManualPage> {
       totalArea += t.width * t.height * t.count;
       maxDim = math.max(maxDim, math.max(t.width, t.height));
     }
-    _squareSize = math.max(maxDim, math.sqrt(totalArea) * 1.5);
+    _squareSize = math.max(maxDim, math.sqrt(totalArea) * 1.5).ceilToDouble();
     _palScrollOffset = 0.0;
     _rects = [
       for (int i = 0; i < widget.types.length; i++)
@@ -144,6 +180,7 @@ class _ManualPageState extends State<ManualPage> {
   }
 
   void _reset() {
+    _saveHistory();
     setState(() {
       _initFresh();
       _ppuReady = false; // recompute scale to fit reset square
@@ -156,8 +193,9 @@ class _ManualPageState extends State<ManualPage> {
   void _copyOptimized() {
     final result = findOptimalPacking(widget.types);
     if (result == null) return;
+    _saveHistory();
     setState(() {
-      _squareSize = result.squareSize;
+      _squareSize = result.squareSize.roundToDouble();
       _rects = result.placed.map((p) {
         final t = widget.types[p.typeIndex];
         return ManualRect(
@@ -312,7 +350,7 @@ class _ManualPageState extends State<ManualPage> {
       final newPx = math.max(pos.dx - sq.left, pos.dy - sq.top);
       final newSize = newPx / _ppu;
       final minSize = _minSizeToContain();
-      setState(() => _squareSize = math.max(newSize, minSize));
+      setState(() => _squareSize = math.max(newSize, minSize).ceilToDouble());
       return;
     }
 
@@ -331,6 +369,7 @@ class _ManualPageState extends State<ManualPage> {
 
   void _onPanEnd(DragEndDetails d, Size size) {
     if (_resizing) {
+      _saveHistory();
       setState(() => _resizing = false);
       return;
     }
@@ -355,11 +394,13 @@ class _ManualPageState extends State<ManualPage> {
       final rawWx = wPos.dx.clamp(0.0, _squareSize - r.worldW);
       final rawWy = wPos.dy.clamp(0.0, _squareSize - r.worldH);
       final (wx, wy) = _autoFix(_dragIdx, rawWx, rawWy);
+      _saveHistory();
       setState(() {
         _rects[_dragIdx] = r.copyWith(inSquare: true, wx: wx, wy: wy);
         _dragIdx = -1;
       });
     } else {
+      _saveHistory();
       setState(() {
         _rects[_dragIdx] = r.copyWith(inSquare: false);
         _dragIdx = -1;
@@ -380,9 +421,11 @@ class _ManualPageState extends State<ManualPage> {
       final wx = newR.wx.clamp(0.0, _squareSize - newR.worldW);
       final wy = newR.wy.clamp(0.0, _squareSize - newR.worldH);
       if (newR.worldW <= _squareSize && newR.worldH <= _squareSize) {
+        _saveHistory();
         setState(() => _rects[idx] = newR.copyWith(wx: wx, wy: wy));
       }
     } else {
+      _saveHistory();
       setState(() => _rects[idx] = newR);
     }
   }
@@ -601,6 +644,20 @@ class _ManualPageState extends State<ManualPage> {
                     fontSize: 15))
             : null,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.undo),
+            color: Colors.white70,
+            disabledColor: Colors.white24,
+            tooltip: 'Undo',
+            onPressed: _history.isEmpty ? null : _undo,
+          ),
+          IconButton(
+            icon: const Icon(Icons.redo),
+            color: Colors.white70,
+            disabledColor: Colors.white24,
+            tooltip: 'Redo',
+            onPressed: _future.isEmpty ? null : _redo,
+          ),
           TextButton.icon(
             onPressed: () {
               final data = ManualPageData(

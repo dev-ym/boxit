@@ -15,6 +15,35 @@ class _HomePageState extends State<HomePage> {
   final _types = <RectType>[];
   ManualPageData? _savedManualData;
 
+  final _history = <List<RectType>>[];
+  final _future = <List<RectType>>[];
+
+  List<RectType> _copyTypes() => _types.map((t) => t.copyWith()).toList();
+
+  void _saveHistory() {
+    _history.add(_copyTypes());
+    _future.clear();
+    if (_history.length > 100) _history.removeAt(0);
+  }
+
+  void _undo() {
+    if (_history.isEmpty) return;
+    setState(() {
+      _future.add(_copyTypes());
+      _types..clear()..addAll(_history.removeLast());
+      _typesChanged();
+    });
+  }
+
+  void _redo() {
+    if (_future.isEmpty) return;
+    setState(() {
+      _history.add(_copyTypes());
+      _types..clear()..addAll(_future.removeLast());
+      _typesChanged();
+    });
+  }
+
   void _typesChanged() => _savedManualData = null;
 
   void _add() {
@@ -27,6 +56,7 @@ class _HomePageState extends State<HomePage> {
       h = (1 + rng.nextInt(7)).toDouble(); // 1..7
     } while (existing.contains((w, h)));
     setState(() {
+      _saveHistory();
       _typesChanged();
       _types.add(RectType(
         width: w,
@@ -64,6 +94,22 @@ class _HomePageState extends State<HomePage> {
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 18)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.undo),
+            color: Colors.white70,
+            disabledColor: Colors.white24,
+            tooltip: 'Undo',
+            onPressed: _history.isEmpty ? null : _undo,
+          ),
+          IconButton(
+            icon: const Icon(Icons.redo),
+            color: Colors.white70,
+            disabledColor: Colors.white24,
+            tooltip: 'Redo',
+            onPressed: _future.isEmpty ? null : _redo,
+          ),
+        ],
       ),
       body: Center(
         child: ConstrainedBox(
@@ -107,9 +153,9 @@ class _HomePageState extends State<HomePage> {
                               key: ValueKey(i),
                               type: _types[i],
                               onChanged: (t) => setState(
-                                  () { _typesChanged(); _types[i] = t; }),
+                                  () { _saveHistory(); _typesChanged(); _types[i] = t; }),
                               onDelete: () => setState(
-                                  () { _typesChanged(); _types.removeAt(i); }),
+                                  () { _saveHistory(); _typesChanged(); _types.removeAt(i); }),
                             ),
                           ),
                   ),
