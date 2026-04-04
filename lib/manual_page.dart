@@ -635,6 +635,7 @@ class _ManualPageState extends State<ManualPage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF161B22),
         elevation: 1,
+        automaticallyImplyLeading: isWide,
         iconTheme: const IconThemeData(color: Colors.white),
         title: isWide
             ? const Text('Manual Placement',
@@ -681,13 +682,21 @@ class _ManualPageState extends State<ManualPage> {
             label: const Text('Copy Optimized',
                 style: TextStyle(color: Color(0xFF79C0FF), fontSize: 13)),
           ),
-          TextButton.icon(
-            onPressed: _reset,
-            icon: const Icon(Icons.restart_alt,
-                size: 16, color: Colors.white54),
-            label:
-                const Text('Reset', style: TextStyle(color: Colors.white54)),
-          ),
+          if (isWide)
+            TextButton.icon(
+              onPressed: _reset,
+              icon: const Icon(Icons.restart_alt,
+                  size: 16, color: Colors.white54),
+              label:
+                  const Text('Reset', style: TextStyle(color: Colors.white54)),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.restart_alt),
+              color: Colors.white54,
+              tooltip: 'Reset',
+              onPressed: _reset,
+            ),
           if (showHint)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
